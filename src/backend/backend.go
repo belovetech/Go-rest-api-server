@@ -38,54 +38,15 @@ func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/products/{id}", a.fetchProduct).Methods("GET")
 
 	a.Router.HandleFunc("/orders", a.newOrder).Methods("POST")
+	a.Router.HandleFunc("/orderitems", a.newOrderItem).Methods("POST")
 	a.Router.HandleFunc("/orders", a.allOrders).Methods("GET")
 	a.Router.HandleFunc("/orders/{id}", a.fetchOrder).Methods("GET")
+
 }
 
 // Handlers
 func helloWorld(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello world!")
-}
-
-// orders
-func (a *App) newOrder(w http.ResponseWriter, r *http.Request) {
-	reqBody, _ := ioutil.ReadAll(r.Body)
-	var o order
-	json.Unmarshal(reqBody, &o)
-
-	err := o.createOrder(a.DB)
-	if err != nil {
-		fmt.Printf("createOrder error %s\n", err.Error())
-		responseWithError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	responseWithJson(w, http.StatusOK, o)
-}
-
-func (a *App) allOrders(w http.ResponseWriter, r *http.Request) {
-	orders, err := getOrders(a.DB)
-	if err != nil {
-		fmt.Printf("allOrder error %s\n", err.Error())
-		responseWithError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	responseWithJson(w, http.StatusOK, orders)
-}
-
-func (a *App) fetchOrder(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	var o order
-	o.ID, _ = strconv.Atoi(id)
-
-	err := o.getOrder(a.DB)
-	if err != nil {
-		fmt.Printf("fetchOrder error %s\n", err.Error())
-		responseWithError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	responseWithJson(w, http.StatusOK, o)
 }
 
 // Products
@@ -130,6 +91,80 @@ func (a *App) fetchProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	responseWithJson(w, http.StatusOK, p)
+}
+
+// orders
+func (a *App) newOrder(w http.ResponseWriter, r *http.Request) {
+	reqBody, _ := ioutil.ReadAll(r.Body)
+	var o order
+	json.Unmarshal(reqBody, &o)
+
+	err := o.createOrder(a.DB)
+	if err != nil {
+		fmt.Printf("createOrder error %s\n", err.Error())
+		responseWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	for _, item := range o.Items {
+		var oi orderItem
+		oi = item
+		oi.OrderID = o.ID
+
+		err := oi.createOrderItem(a.DB)
+		if err != nil {
+			fmt.Printf("createOrder, createOrderItem error %s\n", err.Error())
+			responseWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+
+	responseWithJson(w, http.StatusCreated, o)
+}
+
+func (a *App) newOrderItem(w http.ResponseWriter, r *http.Request) {
+	reqBody, _ := ioutil.ReadAll(r.Body)
+	var ois []orderItem
+	json.Unmarshal(reqBody, &ois)
+
+	for _, item := range ois {
+		var oi orderItem
+		oi = item
+		err := oi.createOrderItem(a.DB)
+		if err != nil {
+			fmt.Printf("createOrderItem error %s\n", err.Error())
+			responseWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+	}
+	responseWithJson(w, http.StatusCreated, ois)
+}
+
+func (a *App) allOrders(w http.ResponseWriter, r *http.Request) {
+	orders, err := getOrders(a.DB)
+	if err != nil {
+		fmt.Printf("allOrder error %s\n", err.Error())
+		responseWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	responseWithJson(w, http.StatusOK, orders)
+}
+
+func (a *App) fetchOrder(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	var o order
+	o.ID, _ = strconv.Atoi(id)
+
+	err := o.getOrder(a.DB)
+	if err != nil {
+		fmt.Printf("fetchOrder error %s\n", err.Error())
+		responseWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	responseWithJson(w, http.StatusOK, o)
 }
 
 // Helper function

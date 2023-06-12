@@ -1,5 +1,15 @@
 {
   "customerName": "Mike Henry",
   "total": 550,
-  "status": "Delivered"
+  "status": "Delivered",
+  "items": [
+    {
+      "product_id": 2,
+      "quantity": 1
+    },
+    {
+      "product_id": 7,
+      "quantity": 3
+    }
+  ]
 }
