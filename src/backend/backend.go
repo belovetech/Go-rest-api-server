@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -32,7 +33,8 @@ func (a *App) Initialize() {
 func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/", helloWorld).Methods("GET")
 	a.Router.HandleFunc("/products", a.allProducts).Methods("GET")
-	a.Router.HandleFunc("/product/{id}", a.fetchProduct).Methods("GET")
+	a.Router.HandleFunc("/products/{id}", a.fetchProduct).Methods("GET")
+	a.Router.HandleFunc("/products", a.newProduct).Methods("POST")
 }
 
 // Handlers
@@ -40,11 +42,26 @@ func helloWorld(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello world!")
 }
 
+func (a *App) newProduct(w http.ResponseWriter, r *http.Request) {
+	reqBody, _ := ioutil.ReadAll(r.Body)
+	var p product
+	json.Unmarshal(reqBody, &p)
+
+	err := p.createProduct(a.DB)
+	if err != nil {
+		log.Printf("newProduct error: %s", err.Error())
+		responseWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	responseWithJson(w, http.StatusCreated, p)
+}
+
 func (a *App) allProducts(w http.ResponseWriter, r *http.Request) {
 	products, err := getProducts(a.DB)
 
 	if err != nil {
-		log.Printf("Products error: %s", err.Error())
+		log.Printf("allProducts error: %s", err.Error())
 		responseWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -61,7 +78,7 @@ func (a *App) fetchProduct(w http.ResponseWriter, r *http.Request) {
 	err := p.getProduct(a.DB)
 
 	if err != nil {
-		log.Printf("Products error: %s", err.Error())
+		log.Printf("fetchProducts error: %s", err.Error())
 		responseWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

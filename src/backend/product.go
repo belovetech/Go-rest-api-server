@@ -15,6 +15,21 @@ type product struct {
 	Status      string `json:"status"`
 }
 
+func (p *product) createProduct(db *sql.DB) error {
+	res, err := db.Exec("INSERT INTO products(productCode, name, inventory, price, status) VALUES(?,?,?,?,?)", p.ProductCode, p.Name, p.Inventory, p.Price, p.Status)
+	if err != nil {
+		return err
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	p.ID = int(id)
+	return nil
+}
+
 func getProducts(db *sql.DB) ([]product, error) {
 	rows, err := db.Query("SELECT * FROM products")
 
@@ -23,12 +38,11 @@ func getProducts(db *sql.DB) ([]product, error) {
 	}
 
 	defer rows.Close()
-
 	products := []product{}
 
 	for rows.Next() {
 		var p product
-		if err := rows.Scan(&p.ID, &p.Inventory, &p.Name, &p.Price, &p.ProductCode, &p.Status); err != nil {
+		if err := rows.Scan(&p.ID, &p.ProductCode, &p.Name, &p.Inventory, &p.Price, &p.Status); err != nil {
 			return nil, err
 		}
 		products = append(products, p)
@@ -37,6 +51,6 @@ func getProducts(db *sql.DB) ([]product, error) {
 }
 
 func (p *product) getProduct(db *sql.DB) error {
-	row := db.QueryRow("SELECT productCode, inventory, name, price, status FROM products WHERE id = ?", p.ID)
-	return row.Scan(&p.Inventory, &p.Name, &p.Price, &p.ProductCode, &p.Status)
+	row := db.QueryRow("SELECT productCode, name, inventory, price, status FROM products WHERE id = ?", p.ID)
+	return row.Scan(&p.ProductCode, &p.Name, &p.Inventory, &p.Price, &p.Status)
 }
