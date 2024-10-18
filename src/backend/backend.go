@@ -25,8 +25,51 @@ func (a *App) Initialize() {
 		log.Fatal(err.Error())
 	}
 	a.DB = db
+
+	// Initialize the database and create the products table
+	if err := InitializeDatabase(a.DB); err != nil {
+		log.Fatal("Error initializing database: ", err)
+	}
+
 	a.Router = mux.NewRouter()
 	a.initializeRoutes()
+}
+
+func InitializeDatabase(db *sql.DB) error {
+	// Create the products table if it doesn't exist
+	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS products (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		productCode TEXT NOT NULL,
+		name TEXT NOT NULL,
+		inventory INTEGER NOT NULL,
+		price INTEGER NOT NULL,
+		status TEXT NOT NULL
+	)`)
+	if err != nil {
+		return err
+	}
+
+	// Create the orders table if it doesn't exist
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS orders (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		customerName TEXT NOT NULL,
+		total INTEGER NOT NULL,
+		status TEXT NOT NULL
+	)`)
+	if err != nil {
+		return err
+	}
+
+	// Create the order_items table if it doesn't exist
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS order_items (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		order_id INTEGER NOT NULL,
+		product_id INTEGER NOT NULL,
+		quantity INTEGER NOT NULL,
+		FOREIGN KEY(order_id) REFERENCES orders(id),
+		FOREIGN KEY(product_id) REFERENCES products(id)
+	)`)
+	return err
 }
 
 // Routers

@@ -1,4 +1,4 @@
-module rest-api.com/application
+module github.com/belovetech/Go-rest-api-server.git/application
 
 go 1.20
 

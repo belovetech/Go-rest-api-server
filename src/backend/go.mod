@@ -1,4 +1,4 @@
-module rest-api.com/backend
+module github.com/belovetech/Go-rest-api-server.git/backend
 
 go 1.20
 
